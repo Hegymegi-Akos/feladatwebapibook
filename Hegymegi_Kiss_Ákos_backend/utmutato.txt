@@ -1,0 +1,242 @@
+═══════════════════════════════════════════════════════════════════
+  KÖNYVTÁR (librarydb) BACKEND FELADAT - TELJES MEGOLDÁSI ÚTMUTATÓ
+═══════════════════════════════════════════════════════════════════
+
+
+-------------------------------------------------------------------
+1. ADATBÁZIS LÉTREHOZÁSA (phpMyAdmin)
+-------------------------------------------------------------------
+
+a) Új adatbázis létrehozása
+   - phpMyAdmin -> Új adatbázis
+   - Név: librarydb
+   - Kódolás: utf8mb4_hungarian_ci
+
+b) Táblák létrehozása (3 db)
+   - Vagy importáld a librarydb.sql fájlt (Importálás fül)
+   - Vagy kézzel hozd létre a Designer nézetben
+
+   AUTHORS tábla:
+   - author_id    INT(11)       PRIMARY, A_I (auto_increment)
+   - author_name  VARCHAR(100)
+
+   CATEGORIES tábla:
+   - category_id    INT(11)       PRIMARY, A_I
+   - category_name  VARCHAR(100)
+
+   BOOKS tábla:
+   - book_id       INT(11)       PRIMARY, A_I
+   - title         VARCHAR(200)
+   - publish_date  DATE
+   - author_id     INT(11)       INDEX (külső kulcs)
+   - category_id   INT(11)       INDEX (külső kulcs)
+
+c) Kapcsolatok beállítása (Designer nézet)
+   - books.author_id   --> authors.author_id
+   - books.category_id --> categories.category_id
+
+
+-------------------------------------------------------------------
+2. CASCADE TÖRLÉS BEÁLLÍTÁSA (szerző törlésekor a könyvei is)
+-------------------------------------------------------------------
+
+phpMyAdmin Designer nézetben:
+- Kattints DUPLÁN az authors <-> books kapcsolat vonalra
+- ON DELETE: CASCADE
+- ON UPDATE: CASCADE (opcionális, de ajánlott)
+- Mentés
+
+Vagy SQL paranccsal:
+ALTER TABLE books
+DROP FOREIGN KEY books_ibfk_1;
+
+ALTER TABLE books
+ADD CONSTRAINT books_ibfk_1
+FOREIGN KEY (author_id) REFERENCES authors(author_id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+
+-------------------------------------------------------------------
+3. TESZT ADATOK FELTÖLTÉSE
+-------------------------------------------------------------------
+
+A librarydb.sql fájl tartalmazza a teszt adatokat is.
+Ha kézzel akarod, a phpMyAdmin Beszúrás (Insert) fülén lehet.
+
+FONTOS: a feladat eredetileg egy "forrás fájlban megadott" adatokat
+emleget. Ha kaptál ilyen fájlt a vizsgán, akkor azt használd!
+
+
+-------------------------------------------------------------------
+4. VISUAL STUDIO - WEB API PROJEKT LÉTREHOZÁSA
+-------------------------------------------------------------------
+
+a) Visual Studio Installer megnyitása
+   - Module: ASP.NET and web development (workload)
+   - .NET 8.0 SDK
+
+b) Új projekt
+   - File -> New -> Project
+   - Sablon: ASP.NET Core Web API
+   - Név: Vezeteknev_Keresztnev_backend
+   - Framework: .NET 8.0
+   - Use controllers: IGEN
+   - Enable OpenAPI support: IGEN
+
+
+-------------------------------------------------------------------
+5. NUGET CSOMAGOK TELEPÍTÉSE
+-------------------------------------------------------------------
+
+Tools -> NuGet Package Manager -> Manage NuGet Packages
+Vagy Package Manager Console-ban:
+
+Install-Package MySql.EntityFrameworkCore -Version 8.0.2
+Install-Package Microsoft.EntityFrameworkCore.Tools -Version 8.0.4
+Install-Package Microsoft.EntityFrameworkCore.Design
+
+
+-------------------------------------------------------------------
+6. MODELLEK GENERÁLÁSA (SCAFFOLD-DBCONTEXT)
+-------------------------------------------------------------------
+
+Package Manager Console-ban:
+
+Scaffold-DbContext "server=localhost;database=librarydb;user=root;password=;ssl mode=none;" MySql.EntityFrameworkCore -OutputDir Models -f
+
+Ez automatikusan létrehozza:
+- Models/Author.cs
+- Models/Book.cs
+- Models/Category.cs
+- Models/LibrarydbContext.cs
+
+
+-------------------------------------------------------------------
+7. CONNECTION STRING és APPSETTINGS.JSON
+-------------------------------------------------------------------
+
+appsettings.json tartalma:
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "UID": "FKB3F4FEA09CE43C",
+  "ConnectionStrings": {
+    "MySql": "server=localhost;database=librarydb;user=root;password=;ssl mode=none;"
+  },
+  "AllowedHosts": "*"
+}
+
+
+-------------------------------------------------------------------
+8. PROGRAM.CS - FŐ BEÁLLÍTÁSOK
+-------------------------------------------------------------------
+
+A főprogramban beállítandó:
+- DbContext regisztrálása (connection string-gel)
+- AddControllers().AddJsonOptions(...) -> körkörös hivatkozás kezelése
+- CORS engedélyezése
+- UID tárolása (a feladat ezt kéri!)
+
+
+-------------------------------------------------------------------
+9. VÉGPONTOK ÁTTEKINTÉSE
+-------------------------------------------------------------------
+
+PORT: 7080 (a feladat ezt írja elő!)
+
+| Metódus | URL                                                          |
+|---------|--------------------------------------------------------------|
+| GET     | /api/authors/feladat9/{name}     -> szerző + könyvei         |
+| GET     | /api/books/feladat10             -> összes könyv             |
+| GET     | /api/categories/feladat11        -> kategóriák + könyveik    |
+| GET     | /api/authors/feladat12           -> szerzők száma            |
+| POST    | /api/books/feladat13?uid=...     -> új könyv (UID-vel)       |
+
+
+-------------------------------------------------------------------
+10. KÖRKÖRÖS HIVATKOZÁS KEZELÉSE
+-------------------------------------------------------------------
+
+Két módszer (a feladat egyiket kéri):
+
+a) Program.cs-ben:
+   builder.Services.AddControllers().AddJsonOptions(x =>
+       x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+b) Vagy a Book.cs-ben:
+   [JsonIgnore]
+   public virtual Author Author { get; set; }
+
+
+-------------------------------------------------------------------
+11. CORS BEÁLLÍTÁS
+-------------------------------------------------------------------
+
+A Program.cs-ben:
+
+builder.Services.AddCors(c => { 
+    c.AddPolicy("AllowOrigin", options => 
+        options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); 
+});
+
+Majd:
+
+app.UseCors(options => 
+    options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
+
+-------------------------------------------------------------------
+12. PORT BEÁLLÍTÁSA (Properties/launchSettings.json)
+-------------------------------------------------------------------
+
+A "https" profilban:
+"applicationUrl": "https://localhost:7080;http://localhost:5193"
+
+
+-------------------------------------------------------------------
+13. LEADÁS ELŐTTI ELLENŐRZŐLISTA
+-------------------------------------------------------------------
+
+[ ] librarydb adatbázis és táblák létrejöttek
+[ ] CASCADE törlés beállítva (authors -> books)
+[ ] Teszt adatokkal feltöltve a 3 tábla
+[ ] Modellek generálva a Scaffold paranccsal
+[ ] Program.cs-ben az AddJsonOptions vagy a Book.cs-ben JsonIgnore
+[ ] Mind az 5 végpont működik a megfelelő URL-en
+[ ] Port 7080 a launchSettings.json-ban
+[ ] CORS beállítva
+[ ] Felesleges kódok TÖRÖLVE:
+    - Controllers/WeatherForecastController.cs
+    - WeatherForecast.cs
+[ ] bin és obj mappák törölve a tömörítés előtt
+[ ] librarydb.sql vagy json a projekt mappájában
+[ ] Egész projekt becsomagolva: Vezeteknev_Keresztnev_backend.zip
+
+
+-------------------------------------------------------------------
+14. PONTOZÓLAP (max 15 pont)
+-------------------------------------------------------------------
+
+ 5. feladat: Táblák + kapcsolatok    -> 2 pont
+ 6. feladat: CASCADE törlés          -> 1 pont
+    7. feladat: Adatok feltöltése        -> 1 pont
+    8. feladat: Scaffold parancs         -> 1 pont
+    9. feladat: JsonIgnore / cycles      -> 1 pont
+   10. feladat: feladat9 (szerző + könyvei) -> 2 pont
+   11. feladat: feladat10 (összes könyv)    -> 1 pont
+   12. feladat: feladat11 (kategóriák)      -> 2 pont
+   13. feladat: feladat12 (szerző szám)     -> 1 pont
+   14. feladat: feladat13 (új könyv UID-vel) -> 2 pont
+   15. feladat: CORS policy             -> 1 pont
+   ÖSSZESEN: 15 pont
+
+
+-------------------------------------------------------------------
+KÉSZ - sok sikert a vizsgán!
+-------------------------------------------------------------------
