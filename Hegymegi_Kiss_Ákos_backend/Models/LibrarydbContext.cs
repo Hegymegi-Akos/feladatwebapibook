@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,7 +22,6 @@ public partial class LibrarydbContext : DbContext
     public virtual DbSet<Category> Categories { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseMySQL("server=localhost;database=librarydb;user=root;password=;ssl mode=none;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -70,6 +69,11 @@ public partial class LibrarydbContext : DbContext
             entity.HasOne(d => d.Author).WithMany(p => p.Books)
                 .HasForeignKey(d => d.AuthorId)
                 .HasConstraintName("books_ibfk_1");
+
+            // EZ HIÁNYZOTT! - Category <-> Book kapcsolat
+            entity.HasOne(d => d.Category).WithMany(p => p.Books)
+                .HasForeignKey(d => d.CategoryId)
+                .HasConstraintName("books_ibfk_2");
         });
 
         modelBuilder.Entity<Category>(entity =>
