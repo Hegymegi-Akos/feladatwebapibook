@@ -1,0 +1,87 @@
+-- =====================================================
+-- librarydb adatbázis létrehozó SQL script
+-- =====================================================
+-- Használat phpMyAdmin-ban:
+-- 1. Bal oldali menüben: Új adatbázis (vagy ha már van, töröld)
+-- 2. Felül: Importálás vagy SQL fül -> illeszd be ezt
+-- =====================================================
+
+CREATE DATABASE IF NOT EXISTS librarydb 
+    CHARACTER SET utf8mb4 
+    COLLATE utf8mb4_hungarian_ci;
+
+USE librarydb;
+
+-- =====================================================
+-- AUTHORS tábla
+-- =====================================================
+DROP TABLE IF EXISTS books;
+DROP TABLE IF EXISTS authors;
+DROP TABLE IF EXISTS categories;
+
+CREATE TABLE authors (
+    author_id INT(11) NOT NULL AUTO_INCREMENT,
+    author_name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (author_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
+
+-- =====================================================
+-- CATEGORIES tábla
+-- =====================================================
+CREATE TABLE categories (
+    category_id INT(11) NOT NULL AUTO_INCREMENT,
+    category_name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
+
+-- =====================================================
+-- BOOKS tábla (CASCADE törléssel a szerzőre!)
+-- =====================================================
+CREATE TABLE books (
+    book_id INT(11) NOT NULL AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    publish_date DATE NOT NULL,
+    author_id INT(11) NOT NULL,
+    category_id INT(11) NOT NULL,
+    PRIMARY KEY (book_id),
+    KEY author_id (author_id),
+    KEY category_id (category_id),
+    CONSTRAINT books_ibfk_1 
+        FOREIGN KEY (author_id) 
+        REFERENCES authors (author_id) 
+        ON DELETE CASCADE 
+        ON UPDATE CASCADE,
+    CONSTRAINT books_ibfk_2 
+        FOREIGN KEY (category_id) 
+        REFERENCES categories (category_id) 
+        ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
+
+-- =====================================================
+-- TESZT ADATOK
+-- =====================================================
+
+INSERT INTO authors (author_id, author_name) VALUES
+(1, 'Linda Wilson'),
+(2, 'John Smith'),
+(3, 'Emma Brown'),
+(4, 'Michael Davis'),
+(5, 'Sarah Johnson');
+
+INSERT INTO categories (category_id, category_name) VALUES
+(1, 'Romantikus'),
+(2, 'Krimi'),
+(3, 'Sci-fi'),
+(4, 'Történelmi'),
+(5, 'Életrajz');
+
+INSERT INTO books (book_id, title, publish_date, author_id, category_id) VALUES
+(1, 'Az elveszett szerelem',  '2020-05-12', 1, 1),
+(2, 'Éjszakai árnyak',        '2019-08-23', 1, 2),
+(3, 'A nagy nyomozás',        '2021-03-15', 2, 2),
+(4, 'Csillagok háborúja',     '2018-11-30', 3, 3),
+(5, 'Történelmi krónikák',    '2022-06-10', 4, 4),
+(6, 'Egy élet története',     '2023-01-20', 5, 5),
+(7, 'Szerelem a viharban',    '2024-02-14', 1, 1);
+
+-- Kész!
