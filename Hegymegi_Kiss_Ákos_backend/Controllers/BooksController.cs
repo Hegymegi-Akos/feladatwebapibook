@@ -1,72 +1,66 @@
-﻿using Hegymegi_Kiss_Ákos_backend.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+using Hegymegi_Kiss_Ákos_backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Runtime.InteropServices;
 
 namespace Hegymegi_Kiss_Ákos_backend.Controllers
 {
-    public class BooksController
+    [Route("api/books")]
+    [ApiController]
+    public class BooksController : ControllerBase
     {
-        [Route("api/books")]
-        [ApiController]
-        public class BooksController : ControllerBase
+        private readonly LibrarydbContext _context;
+        private readonly IConfiguration _configuration;
+
+        public BooksController(LibrarydbContext context, IConfiguration configuration)
         {
-            private readonly LibrarydbContext _context;
-
-            public BooksController(LibrarydbContext context)
-            {
-                _context = context;
-            }
-
-            [HttpGet("feladat10")]
-            public async Task<ActionResult> Get()
-            {
-                var books = await _context.Books.ToListAsync();
-
-                if (books != null)
-                {
-                    return Ok(books);
-                }
-
-                Exception e = new();
-                return BadRequest(e.Message);
-            }
-
-            [HttpPost("feladat13")]
-            public async Task<ActionResult> AddNewBook(string id, Book book)
-            {
-                var builder = WebApplication.CreateBuilder();
-                string uid = builder.Configuration.GetValue<string>("Code");
-
-                if (uid == id)
-                {
-                    var bk = new Book
-                    {
-
-                        BookId = book.BookId,
-                        Title = book.Title,
-                        PublishDate = book.PublishDate,
-                        AuthorId = book.AuthorId,
-                        CategoryId = book.CategoryId
-                    };
-
-                    if (bk != null)
-                    {
-                        await _context.Books.AddAsync(bk);
-                        await _context.SaveChangesAsync();
-                        return StatusCode(201, "Könyv hozzáadása sikeresen megtörtént.");
-                    }
-
-                    Exception e = new();
-                    return BadRequest(e.Message);
-                }
-
-                return StatusCode(401, "Nincs jogusltsága új könyv felviteléhez.");
-            }
-
+            _context = context;
+            _configuration = configuration;
         }
 
+        // ============================================
+        // 10. FELADAT: összes könyv
+        // GET https://localhost:7080/api/books/feladat10
+        // ============================================
+        [HttpGet("feladat10")]
+        public async Task<ActionResult> Get()
+        {
+            try
+            {
+                var books = await _context.Books.ToListAsync();
+                return Ok(books);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ============================================
+        // 13. FELADAT: új könyv felvitele UID alapján
+        // POST https://localhost:7080/api/books/feladat13?uid=FKB3F4FEA09CE43C
+        // Body: { "bookId": 0, "title": "...", "publishDate": "...", "authorId": 0, "categoryId": 0 }
+        // ============================================
+        [HttpPost("feladat13")]
+        public async Task<ActionResult> AddNewBook([FromQuery] string uid, [FromBody] Book book)
+        {
+            // UID összehasonlítása a főprogramban tárolt értékkel
+            string? storedUid = _configuration["UID"];
+
+            if (uid != storedUid)
+            {
+                return StatusCode(401, new { message = "Nincs jogosultsága új könyv felvételéhez!" });
+            }
+
+            try
+            {
+                await _context.Books.AddAsync(book);
+                await _context.SaveChangesAsync();
+                return StatusCode(201, new { message = "Könyv hozzáadása sikeresen megtörtént." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
