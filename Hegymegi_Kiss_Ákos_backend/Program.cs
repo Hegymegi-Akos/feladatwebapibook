@@ -1,4 +1,3 @@
-
 using Hegymegi_Kiss_Ákos_backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -11,29 +10,44 @@ namespace Hegymegi_Kiss_Ákos_backend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+            // ============================================
+            // UID tárolása a főprogramban (feladat 13)
+            // ============================================
+            string UID = "FKB3F4FEA09CE43C";
+            builder.Configuration["UID"] = UID;
 
-            builder.Services.AddDbContext<LibrarydbContext>(option => {
+            // ============================================
+            // Controllers + körkörös hivatkozás kezelése (feladat 8)
+            // ============================================
+            builder.Services.AddControllers().AddJsonOptions(x =>
+                x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+            // ============================================
+            // DbContext regisztrálása
+            // ============================================
+            builder.Services.AddDbContext<LibrarydbContext>(option =>
+            {
                 var conn = builder.Configuration.GetConnectionString("MySql");
                 option.UseMySQL(conn);
             });
 
-            builder.Services.AddCors(c => { c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); });
+            // ============================================
+            // CORS beállítása (feladat 14)
+            // ============================================
+            builder.Services.AddCors(c =>
+            {
+                c.AddPolicy("AllowOrigin", options =>
+                    options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            });
 
-
-            // Add services to the container.
-
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            app.UseCors(options =>
+                options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
-
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -41,12 +55,8 @@ namespace Hegymegi_Kiss_Ákos_backend
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
-
             app.Run();
         }
     }
